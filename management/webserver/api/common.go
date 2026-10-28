@@ -1,21 +1,14 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rogpeppe/go-internal/semver"
 
 	"chaitin.cn/patronus/safeline-2/management/webserver/api/response"
-	"chaitin.cn/patronus/safeline-2/management/webserver/pkg/config"
 	"chaitin.cn/patronus/safeline-2/management/webserver/pkg/constants"
-	"chaitin.cn/patronus/safeline-2/management/webserver/utils"
 )
 
 const VersionInfoEntrypoint = "/release/latest/version.json"
@@ -68,68 +61,13 @@ func GetVersion(c *gin.Context) {
 	response.Success(c, gin.H{"version": strings.TrimPrefix(constants.Version, "ce-")})
 }
 
+// GetUpgradeTips reports whether the console should suggest an upgrade. It used
+// to fetch PlatformAddr + /release/latest/version.json from Chaitin's platform;
+// that outbound is neutralised for the 100%-local build. The endpoint now
+// answers "no upgrade" without any network I/O so the console stays happy and
+// never phones home.
 func GetUpgradeTips(ctx *gin.Context) {
-	client := utils.GetHTTPClient()
-	logger.Debugf("GetUpgradeTips: %s", config.GlobalConfig.PlatformAddr+VersionInfoEntrypoint)
-	versionInfoReq, err := http.NewRequest(http.MethodGet, config.GlobalConfig.PlatformAddr+VersionInfoEntrypoint, nil)
-	if err != nil {
-		logger.Warn(err)
-		response.Success(ctx, gin.H{"upgrade_tips": constants.NotUpgrade})
-		return
-	}
-
-	versionInfoRsp, err := client.Do(versionInfoReq)
-	if err != nil {
-		logger.Warn(err)
-		response.Success(ctx, gin.H{"upgrade_tips": constants.NotUpgrade})
-		return
-	}
-	// The response body has to be released on every path, otherwise the
-	// connection (and its file descriptor) stays around until the transport
-	// times it out.
-	defer versionInfoRsp.Body.Close()
-
-	body, err := ioutil.ReadAll(io.LimitReader(versionInfoRsp.Body, maxVersionInfoBytes))
-	if err != nil {
-		logger.Warn(err)
-		response.Success(ctx, gin.H{"upgrade_tips": constants.NotUpgrade})
-		return
-	}
-
-	versionInfo := &versionInfoResponse{}
-	err = json.Unmarshal(body, versionInfo)
-	if err != nil {
-		logger.Warnf("Failed to parse %s: %v, body: %s", config.GlobalConfig.PlatformAddr+VersionInfoEntrypoint, err, loggableBody(body))
-		response.Success(ctx, gin.H{"upgrade_tips": constants.NotUpgrade})
-		return
-	}
-
-	currentVersion := fmt.Sprintf("v%s", constants.Version)
-	latestVersionCmp := semver.Compare(currentVersion, versionInfo.LatestVersion)
-	recVersionCmp := semver.Compare(currentVersion, versionInfo.RecVersion)
-	if semver.Compare(versionInfo.LatestVersion, versionInfo.RecVersion) == -1 || latestVersionCmp == 1 {
-		logger.Warnf("The version number is invalid, current version: %s, latest version: %s, rec version: %s",
-			currentVersion, strconv.Quote(versionInfo.LatestVersion), strconv.Quote(versionInfo.RecVersion))
-		response.Success(ctx, gin.H{"upgrade_tips": constants.NotUpgrade})
-		return
-	}
-
-	var upgradeTips int
-	if recVersionCmp == -1 {
-		upgradeTips = constants.MustUpgrade
-	} else if recVersionCmp == 0 {
-		if latestVersionCmp == 0 {
-			upgradeTips = constants.NotUpgrade
-		} else {
-			upgradeTips = constants.RecommendedUpgrade
-		}
-	} else {
-		if latestVersionCmp < 0 {
-			upgradeTips = constants.RecommendedUpgrade
-		} else {
-			upgradeTips = constants.NotUpgrade
-		}
-	}
-
-	response.Success(ctx, gin.H{"upgrade_tips": upgradeTips})
+	// SAFELOCAL: no outbound to Chaitin's platform.
+	logger.Debugf("GetUpgradeTips disabled: 100%% local, no platform reach")
+	response.Success(ctx, gin.H{"upgrade_tips": constants.NotUpgrade})
 }
