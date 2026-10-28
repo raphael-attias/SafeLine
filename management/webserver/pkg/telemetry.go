@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"chaitin.cn/patronus/safeline-2/management/webserver/pkg/constants"
@@ -55,19 +56,23 @@ func GetUploadNonce() string {
 	return fmt.Sprintf("%s%s", now, randStr)
 }
 
+// DoPostTelemetry is neutralised for the 100%-local build. SafeLine must never
+// phone home to Chaitin's telemetry endpoint, so this function performs no
+// network I/O: it drains the caller's reader and returns a synthetic 200 OK so
+// that its two callers (NotifyInstallation, PostFalsePositives) keep their
+// contract without leaking the reader or opening any outbound connection.
 func DoPostTelemetry(client *http.Client, addr string, reader io.Reader) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodPost, "https://"+addr+constants.TelemetryEntryPoint, reader)
-	if err != nil {
-		return nil, err
+	_ = client
+	_ = addr
+	if reader != nil {
+		_, _ = io.Copy(io.Discard, reader)
 	}
-
-	req.Header.Set("accept", constants.ApplicationJson)
-	req.Header.Set("Content-Type", constants.ApplicationJson)
-
-	rsp, err := client.Do(req)
-	if err != nil {
-		return nil, err
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Status:     "200 OK",
+		Body:       io.NopCloser(strings.NewReader(`{"ok":true}`)),
+		Header:     make(http.Header),
 	}
-
-	return rsp, nil
+	resp.Header.Set("Content-Type", constants.ApplicationJson)
+	return resp, nil
 }

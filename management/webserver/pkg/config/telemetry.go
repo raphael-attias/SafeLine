@@ -9,8 +9,11 @@ type TelemetryConfig struct {
 }
 
 func DefaultTelemetryConfig() TelemetryConfig {
+	// SAFELOCAL: telemetry is disabled (DoPostTelemetry is a no-op). The default
+	// points at a closed local port so that even a re-enabled caller can never
+	// reach Chaitin's rivers-telemetry host.
 	return TelemetryConfig{
-		Addr: "rivers-telemetry:10086",
+		Addr: "127.0.0.1:1",
 	}
 }
 
