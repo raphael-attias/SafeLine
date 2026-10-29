@@ -12,7 +12,10 @@ type ServerConfig struct {
 
 func DefaultServerConfig() ServerConfig {
 	return ServerConfig{
-		ListenAddr: ":9001",
+		// SAFELOCAL: align the API listen port with the bundled nginx upstream
+		// (conf.d/default.conf proxies /api to 127.0.0.1:8000). The stock
+		// default :9001 left nginx with a broken upstream on a self-hosted box.
+		ListenAddr: ":8000",
 		DevMode:    false,
 	}
 }
