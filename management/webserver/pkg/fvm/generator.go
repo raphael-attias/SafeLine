@@ -42,10 +42,13 @@ func InitFVMBytecode() {
 	go func() {
 		fullFSL, err := GenerateFullFSL(database.GetDB().DB)
 		if err != nil {
-			logger.Fatalln("Failed to generate fsl", err)
+			// SAFELOCAL: in 100%-local mode the Chaitin rule/telemetry service is
+			// unreachable, so the compiled FSL bytecode may be unavailable. Degrade
+			// gracefully (warn, keep the control plane alive) instead of crashing.
+			logger.Warnln("Failed to generate fsl (degraded, offline):", err)
 		}
 		if err = CompileAndSave(fullFSL); err != nil {
-			logger.Fatalln("Failed to compile and save fsl", err)
+			logger.Warnln("Failed to compile and save fsl (degraded, offline):", err)
 		}
 	}()
 }
