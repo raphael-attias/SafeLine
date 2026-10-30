@@ -1,0 +1,16 @@
+# terraform.tfvars.example — valeurs non-secrètes (copies en terraform.tfvars).
+# Les SECRETS (proxmox_api_url/proxmox_api_token) sont chargés via TF_ env,
+# JAMAIS écrits ici.
+node_name      = "pygargues"
+vm_id          = 136
+lxc_hostname   = "safeline"
+datastore      = "RAID6S"
+vlan           = "homelab"
+vlan_id        = 0          # homelab natif, pas de tag 802.1q
+network_bridge = "vmbr0"
+template_vm_id = 135        # LXC Ubuntu
+cores          = 4
+memory_mb      = 4096
+swap_mb        = 2048
+rootfs_size_gb = 20
+# enable_cloudinit = true

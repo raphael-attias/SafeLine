@@ -1,0 +1,12 @@
+# Ne JAMAIS commiter : state, providers, secrets
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+terraform.tfvars
+terraform.tfvars.*
+!.env.example
+!terraform.tfvars.example
+*.auto.tfvars
