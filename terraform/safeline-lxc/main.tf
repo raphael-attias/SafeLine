@@ -34,9 +34,9 @@ locals {
 }
 
 resource "proxmox_virtual_environment_container" "safeline" {
-  node_name     = var.node_name
-  vm_id         = var.vm_id
-  unprivileged  = true
+  node_name    = var.node_name
+  vm_id        = var.vm_id
+  unprivileged = true
   # unprivileged : non persiste dans le state apres import -> toute valeur
   # configuree force le remplacement. Reel (API PVE) : unprivileged=1. Non configure ici.
   start_on_boot = true
